@@ -38,7 +38,7 @@ public class DialogUtils {
 
     }
 
-    public static void showProgressDialog(Context context, String title, String message){
+    public static void showProgressDialog(Context context, String title, String message) {
         if (progressDialog == null) {
             synchronized (DialogUtils.class) {
                 if (progressDialog == null) {
@@ -50,6 +50,12 @@ public class DialogUtils {
         progressDialog.setMessage(message);
         progressDialog.show();
         progressDialog.setCancelable(true);
+    }
+
+    public static void closeProgressDialog() {
+        if (progressDialog != null) {
+            progressDialog.cancel();
+        }
     }
 
     public static class DialogParams {
