@@ -240,7 +240,6 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
 
     @Override
     public int getItemCount() {
-
         return addressList.size();
     }
 
