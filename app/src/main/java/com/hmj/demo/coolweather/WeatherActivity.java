@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.hmj.demo.coolweather.gson.HeWeather;
 import com.hmj.demo.coolweather.service.AutoRefreshService;
 import com.hmj.demo.coolweather.utils.RetrofitUtil;
@@ -115,6 +116,9 @@ public class WeatherActivity extends AppCompatActivity {
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 try {
                     String background = response.body().string();
+                    if (TextUtils.isEmpty(background)) {
+                        return;
+                    }
                     SharedPreferences.Editor editor = PreferenceManager
                             .getDefaultSharedPreferences(WeatherActivity.this).edit();
                     editor.putString("background", background);
@@ -147,8 +151,16 @@ public class WeatherActivity extends AppCompatActivity {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String weather = sharedPreferences.getString(weatherId, null);
         if (!TextUtils.isEmpty(weather)) {
-            HeWeather heWeather = mGson.fromJson(weather, HeWeather.class);
-            showWeather(heWeather);
+            try {
+                HeWeather heWeather = mGson.fromJson(weather, HeWeather.class);
+                showWeather(heWeather);
+            } catch (Exception e) {
+                if (e instanceof JsonSyntaxException) {
+                    ToastUtils.shortToast(WeatherActivity.this, "请求次数不足！");
+                    swipeRefresh.setRefreshing(false);
+                }
+                e.printStackTrace();
+            }
         } else if (!TextUtils.isEmpty(weatherId)) {
             queryWeatherForHttp();
         }
@@ -161,6 +173,9 @@ public class WeatherActivity extends AppCompatActivity {
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 try {
                     String weather = response.body().string();
+                    if (TextUtils.isEmpty(weather)) {
+                        return;
+                    }
                     SharedPreferences.Editor editor = PreferenceManager
                             .getDefaultSharedPreferences(WeatherActivity.this).edit();
                     editor.putString("weatherId", weatherId);
@@ -168,7 +183,11 @@ public class WeatherActivity extends AppCompatActivity {
                     editor.apply();
                     HeWeather heWeather = mGson.fromJson(weather, HeWeather.class);
                     showWeather(heWeather);
-                } catch (IOException e) {
+                } catch (Exception e) {
+                    if (e instanceof JsonSyntaxException) {
+                        ToastUtils.shortToast(WeatherActivity.this, "请求次数不足！");
+                        swipeRefresh.setRefreshing(false);
+                    }
                     e.printStackTrace();
                 }
             }

@@ -239,6 +239,16 @@
 -keepattributes Exceptions
 
 
+
+##---------------Begin: proguard configuration for Gson ----------
+-keep public class com.google.gson.**
+-keep public class com.google.gson.** {public private protected *;}
+
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep public class com.project.mocha_patient.login.SignResponseData { private *; }
+
+##---------------End: proguard configuration for Gson ---------
 # Gson
 -keep class com.google.gson.stream.** { *; }
 -keepattributes EnclosingMethod
