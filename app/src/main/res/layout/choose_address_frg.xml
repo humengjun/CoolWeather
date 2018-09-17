@@ -27,11 +27,12 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:textSize="25sp"
-            tools:text="China" />
+            tools:text="中国" />
     </RelativeLayout>
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recyclerView"
+        android:background="@color/colorFont"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="?attr/actionBarSize"

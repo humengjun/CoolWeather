@@ -1,13 +1,18 @@
 package com.hmj.demo.coolweather;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -15,6 +20,7 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
 import com.hmj.demo.coolweather.gson.HeWeather;
+import com.hmj.demo.coolweather.service.AutoRefreshService;
 import com.hmj.demo.coolweather.utils.RetrofitUtil;
 import com.hmj.demo.coolweather.utils.ToastUtils;
 
@@ -23,6 +29,7 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -60,8 +67,14 @@ public class WeatherActivity extends AppCompatActivity {
     TextView tvCarWash;
     @BindView(R.id.tv_sport)
     TextView tvSport;
+    @BindView(R.id.swipeRefresh)
+    public SwipeRefreshLayout swipeRefresh;
+    @BindView(R.id.drawerLayout)
+    public DrawerLayout drawerLayout;
+    @BindView(R.id.weather_layout)
+    FrameLayout weatherLayout;
     private Gson mGson = new Gson();
-    private String weatherId;
+    public String weatherId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,34 +90,46 @@ public class WeatherActivity extends AppCompatActivity {
         weatherId = getIntent().getStringExtra(WEATHER_ID);
         loadPicBackground();
         queryWeather();
+        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                loadPicBackgroundFromHttp();
+                queryWeatherForHttp();
+            }
+        });
     }
 
-    private void loadPicBackground() {
+    public void loadPicBackground() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String background = preferences.getString("background", null);
         if (!TextUtils.isEmpty(background)) {
             showBackground(background);
         } else {
-            RetrofitUtil.getBackgroundUrl(new Callback<ResponseBody>() {
-                @Override
-                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                    try {
-                        String background = response.body().string();
-                        SharedPreferences.Editor editor = PreferenceManager
-                                .getDefaultSharedPreferences(WeatherActivity.this).edit();
-                        editor.putString("background", background);
-                        showBackground(background);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<ResponseBody> call, Throwable t) {
-
-                }
-            });
+            loadPicBackgroundFromHttp();
         }
+    }
+
+    private void loadPicBackgroundFromHttp() {
+        RetrofitUtil.getBackgroundUrl(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                try {
+                    String background = response.body().string();
+                    SharedPreferences.Editor editor = PreferenceManager
+                            .getDefaultSharedPreferences(WeatherActivity.this).edit();
+                    editor.putString("background", background);
+                    editor.apply();
+                    showBackground(background);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+            }
+        });
     }
 
     private void showBackground(final String background) {
@@ -116,35 +141,41 @@ public class WeatherActivity extends AppCompatActivity {
         });
     }
 
-    private void queryWeather() {
+    public void queryWeather() {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String weather = sharedPreferences.getString("weather", null);
+        String weather = sharedPreferences.getString(weatherId, null);
         if (!TextUtils.isEmpty(weather)) {
             HeWeather heWeather = mGson.fromJson(weather, HeWeather.class);
             showWeather(heWeather);
         } else if (!TextUtils.isEmpty(weatherId)) {
-            RetrofitUtil.getWeatherJson(weatherId, API_KEY, new Callback<ResponseBody>() {
-                @Override
-                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                    try {
-                        String weather = response.body().string();
-                        SharedPreferences.Editor editor = PreferenceManager
-                                .getDefaultSharedPreferences(WeatherActivity.this).edit();
-                        editor.putString("weather", weather);
-                        HeWeather heWeather = mGson.fromJson(weather, HeWeather.class);
-                        showWeather(heWeather);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<ResponseBody> call, Throwable t) {
-                    ToastUtils.shortToast(WeatherActivity.this, "请求网络失败！");
-                }
-            });
+            queryWeatherForHttp();
         }
 
+    }
+
+    private void queryWeatherForHttp() {
+        RetrofitUtil.getWeatherJson(weatherId, API_KEY, new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                try {
+                    String weather = response.body().string();
+                    SharedPreferences.Editor editor = PreferenceManager
+                            .getDefaultSharedPreferences(WeatherActivity.this).edit();
+                    editor.putString("weatherId", weatherId);
+                    editor.putString(weatherId, weather);
+                    editor.apply();
+                    HeWeather heWeather = mGson.fromJson(weather, HeWeather.class);
+                    showWeather(heWeather);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                ToastUtils.shortToast(WeatherActivity.this, "请求网络失败！");
+            }
+        });
     }
 
     private void showWeather(final HeWeather heWeather) {
@@ -158,11 +189,13 @@ public class WeatherActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                swipeRefresh.setRefreshing(false);
                 tvCity.setText(weatherBean.getBasic().getLocation());
                 tvTime.setText(weatherBean.getUpdate().getLoc().substring(weatherBean.getUpdate().getLoc().lastIndexOf(" ")));
                 tvDegree.setText(weatherBean.getNow().getFl());
                 tvWeatherInfo.setText(weatherBean.getNow().getCond_txt());
                 List<HeWeather.HeWeatherBean.DailyForecastBean> daily_forecast = weatherBean.getDaily_forecast();
+                forecastLayout.removeAllViews();
                 for (int i = 0; i < daily_forecast.size(); i++) {
                     HeWeather.HeWeatherBean.DailyForecastBean dailyForecastBean = daily_forecast.get(i);
                     View view = View.inflate(WeatherActivity.this, R.layout.weather_forecast_item, null);
@@ -181,7 +214,14 @@ public class WeatherActivity extends AppCompatActivity {
                 tvComfort.setText("舒适度：" + weatherBean.getSuggestion().getComf().getTxt());
                 tvCarWash.setText("洗车指数：" + weatherBean.getSuggestion().getCw().getTxt());
                 tvSport.setText("运动建议：" + weatherBean.getSuggestion().getSport().getTxt());
+
+                startService(new Intent(WeatherActivity.this, AutoRefreshService.class));
             }
         });
+    }
+
+    @OnClick(R.id.iv_nav)
+    public void onViewClicked() {
+        drawerLayout.openDrawer(GravityCompat.START);
     }
 }

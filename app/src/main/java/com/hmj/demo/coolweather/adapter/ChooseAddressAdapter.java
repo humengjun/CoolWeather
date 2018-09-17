@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.hmj.demo.coolweather.MainActivity;
 import com.hmj.demo.coolweather.R;
 import com.hmj.demo.coolweather.WeatherActivity;
 import com.hmj.demo.coolweather.db.City;
@@ -104,10 +105,19 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
                 } else if (addressLevel == CITY_LEVEL) {
                     queryCounty(adapterPosition);
                 } else if (addressLevel == COUNTY_LEVEL) {
-                    Bundle bundle = new Bundle();
-                    bundle.putString(WeatherActivity.WEATHER_ID,countyList.get(adapterPosition).getWeatherId());
-                    ActivityUtils.startParamsActivity(context, WeatherActivity.class,bundle);
-                    ((Activity)context).finish();
+                    if(context instanceof MainActivity){
+                        Bundle bundle = new Bundle();
+                        bundle.putString(WeatherActivity.WEATHER_ID,countyList.get(adapterPosition).getWeatherId());
+                        ActivityUtils.startParamsActivity(context, WeatherActivity.class,bundle);
+                        ((Activity)context).finish();
+                    }else if(context instanceof WeatherActivity){
+                        WeatherActivity weatherActivity = (WeatherActivity) context;
+                        weatherActivity.drawerLayout.closeDrawers();
+                        weatherActivity.weatherId = countyList.get(adapterPosition).getWeatherId();
+                        weatherActivity.swipeRefresh.setRefreshing(true);
+                        weatherActivity.loadPicBackground();
+                        weatherActivity.queryWeather();
+                    }
                 }
             }
         });
@@ -116,7 +126,7 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
     }
 
     private void queryProvince() {
-        EventBus.getDefault().post(new TitleEvent(PROVINCE_LEVEL, "China"));
+        EventBus.getDefault().post(new TitleEvent(PROVINCE_LEVEL, "中国"));
         provinceList = DataSupport.findAll(Province.class);
         if (provinceList.size() > 0) {
             setProvinceList(PROVINCE_LEVEL, provinceList);
