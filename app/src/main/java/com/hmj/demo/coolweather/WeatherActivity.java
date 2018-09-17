@@ -136,7 +136,9 @@ public class WeatherActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Glide.with(WeatherActivity.this).load(background).into(ivBackground);
+                Glide.with(WeatherActivity.this)
+                        .load(background)
+                        .into(ivBackground);
             }
         });
     }
