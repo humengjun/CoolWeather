@@ -7,12 +7,12 @@ import retrofit2.http.Path;
 
 public interface GetAddressService {
 
-    @GET(".")
+    @GET("china/")
     Call<ResponseBody> getProvinceJson();
 
-    @GET("{provinceId}")
+    @GET("china/{provinceId}")
     Call<ResponseBody> getCityJson(@Path("provinceId") int provinceId);
 
-    @GET("{provinceId}/{cityId}")
+    @GET("china/{provinceId}/{cityId}")
     Call<ResponseBody> getCountryJson(@Path("provinceId") int provinceId,@Path("cityId") int cityId);
 }

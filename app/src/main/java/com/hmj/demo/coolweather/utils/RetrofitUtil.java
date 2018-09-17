@@ -1,6 +1,7 @@
 package com.hmj.demo.coolweather.utils;
 
 import com.hmj.demo.coolweather.API.GetAddressService;
+import com.hmj.demo.coolweather.API.GetWeatherService;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -8,8 +9,8 @@ import retrofit2.Callback;
 import retrofit2.Retrofit;
 
 public class RetrofitUtil {
-    public static final String PROVINCE_URL = "http://guolin.tech/api/china/";
-    public static final String WEATHER_URL = "http://guolin.tech/api/weather";
+    public static final String BASE_URL = "http://guolin.tech/api/";
+
 
     private static GetAddressService service;
 
@@ -19,7 +20,7 @@ public class RetrofitUtil {
             synchronized (RetrofitUtil.class) {
                 if (service == null) {
                     Retrofit retrofit = new Retrofit.Builder()
-                            .baseUrl(PROVINCE_URL)
+                            .baseUrl(BASE_URL)
                             .build();
                     service = retrofit.create(GetAddressService.class);
                 }
@@ -42,6 +43,24 @@ public class RetrofitUtil {
     public static void getCountyJson(int provinceId, int cityId, Callback<ResponseBody> callback) {
         initService();
         Call<ResponseBody> call = service.getCountryJson(provinceId, cityId);
+        call.enqueue(callback);
+    }
+
+    public static void getWeatherJson(String weatherId, String key, Callback<ResponseBody> callback) {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .build();
+        GetWeatherService service = retrofit.create(GetWeatherService.class);
+        Call<ResponseBody> call = service.getWeather(weatherId, key);
+        call.enqueue(callback);
+    }
+
+    public static void getBackgroundUrl(Callback<ResponseBody> callback){
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .build();
+        GetWeatherService service = retrofit.create(GetWeatherService.class);
+        Call<ResponseBody> call = service.getWeatherBackground();
         call.enqueue(callback);
     }
 }

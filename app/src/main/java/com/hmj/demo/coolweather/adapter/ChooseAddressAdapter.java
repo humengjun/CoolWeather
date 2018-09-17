@@ -1,6 +1,8 @@
 package com.hmj.demo.coolweather.adapter;
 
+import android.app.Activity;
 import android.content.Context;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -9,10 +11,12 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.hmj.demo.coolweather.R;
+import com.hmj.demo.coolweather.WeatherActivity;
 import com.hmj.demo.coolweather.db.City;
 import com.hmj.demo.coolweather.db.County;
 import com.hmj.demo.coolweather.db.Province;
 import com.hmj.demo.coolweather.event.TitleEvent;
+import com.hmj.demo.coolweather.utils.ActivityUtils;
 import com.hmj.demo.coolweather.utils.DbUtil;
 import com.hmj.demo.coolweather.utils.RetrofitUtil;
 
@@ -100,7 +104,10 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
                 } else if (addressLevel == CITY_LEVEL) {
                     queryCounty(adapterPosition);
                 } else if (addressLevel == COUNTY_LEVEL) {
-
+                    Bundle bundle = new Bundle();
+                    bundle.putString(WeatherActivity.WEATHER_ID,countyList.get(adapterPosition).getWeatherId());
+                    ActivityUtils.startParamsActivity(context, WeatherActivity.class,bundle);
+                    ((Activity)context).finish();
                 }
             }
         });
