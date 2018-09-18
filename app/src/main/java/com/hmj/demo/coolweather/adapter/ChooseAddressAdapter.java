@@ -238,7 +238,7 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
                 break;
             case CITY_LEVEL:
                 cityList.clear();
-                EventBus.getDefault().post(new TitleEvent(PROVINCE_LEVEL, "China"));
+                EventBus.getDefault().post(new TitleEvent(PROVINCE_LEVEL, "中国"));
                 setProvinceList(PROVINCE_LEVEL, provinceList);
                 break;
             case COUNTY_LEVEL:

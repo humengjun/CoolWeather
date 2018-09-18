@@ -10,10 +10,46 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
+
+    signingConfigs{
+        config{
+            storeFile file(KEY_PATH)
+            storePassword KEY_PASS
+            keyAlias ALIAS_NAME
+            keyPassword ALIAS_PASS
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.config
+        }
+    }
+
+    android.applicationVariants.all {variant->
+        variant.outputs.all {
+            variant.getPackageApplication().outputDirectory = new File(buildDir.absolutePath + '/outputs/apk/release')
+
+            outputFileName = "CoolWeather_${defaultConfig.versionName}_${variant.productFlavors[0].name}.apk"
+
+        }
+    }
+
+    lintOptions{
+        checkReleaseBuilds false
+    }
+
+    flavorDimensions('type')
+
+    productFlavors{
+        qihoo{
+            dimension 'type'
+        }
+
+        baidu{
+            dimension 'type'
         }
     }
 }
@@ -36,4 +72,15 @@ dependencies {
     implementation 'org.litepal.android:core:1.6.1'
     implementation 'com.squareup.okhttp3:okhttp:3.11.0'
     implementation 'org.greenrobot:eventbus:3.1.1'
+}
+afterEvaluate {
+    tasks.getByName("assembleRelease").doLast {
+        copy {
+            from(buildDir.absolutePath + '/outputs/apk/release') {
+                include 'CoolWeather_1.0_baidu.apk'
+                include 'CoolWeather_1.0_qihoo.apk'
+            }
+            into('C:/Users/Administrator/Desktop')
+        }
+    }
 }
