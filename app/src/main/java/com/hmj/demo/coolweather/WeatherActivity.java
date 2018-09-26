@@ -9,7 +9,6 @@ import android.preference.PreferenceManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -21,12 +20,15 @@ import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.hmj.demo.coolweather.gson.HeWeather;
+import com.hmj.demo.coolweather.injector.components.DaggerWeatherComponent;
 import com.hmj.demo.coolweather.service.AutoRefreshService;
 import com.hmj.demo.coolweather.utils.RetrofitUtil;
 import com.hmj.demo.coolweather.utils.ToastUtils;
 
 import java.io.IOException;
 import java.util.List;
+
+import javax.inject.Inject;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -36,7 +38,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class WeatherActivity extends AppCompatActivity {
+public class WeatherActivity extends BaseActivity {
 
     public static final String WEATHER_ID = "weatherId";
     public static final String API_KEY = "bc0418b57b2d4918819d3974ac1285d9";
@@ -74,7 +76,8 @@ public class WeatherActivity extends AppCompatActivity {
     public DrawerLayout drawerLayout;
     @BindView(R.id.weather_layout)
     FrameLayout weatherLayout;
-    private Gson mGson = new Gson();
+    @Inject
+    public Gson mGson;
     public String weatherId;
 
     @Override
@@ -244,5 +247,9 @@ public class WeatherActivity extends AppCompatActivity {
     @OnClick(R.id.iv_nav)
     public void onViewClicked() {
         drawerLayout.openDrawer(GravityCompat.START);
+    }
+
+    public void inject(){
+        DaggerWeatherComponent.create().inject(this);
     }
 }
