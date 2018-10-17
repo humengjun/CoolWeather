@@ -34,9 +34,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import okhttp3.ResponseBody;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import rx.functions.Action1;
 
 public class WeatherActivity extends BaseActivity {
 
@@ -114,11 +112,11 @@ public class WeatherActivity extends BaseActivity {
     }
 
     private void loadPicBackgroundFromHttp() {
-        RetrofitUtil.getBackgroundUrl(new Callback<ResponseBody>() {
+        RetrofitUtil.getBackgroundUrl().subscribe(new Action1<ResponseBody>() {
             @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+            public void call(ResponseBody responseBody) {
                 try {
-                    String background = response.body().string();
+                    String background = responseBody.string();
                     if (TextUtils.isEmpty(background)) {
                         return;
                     }
@@ -130,11 +128,6 @@ public class WeatherActivity extends BaseActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }
-
-            @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-
             }
         });
     }
@@ -171,11 +164,11 @@ public class WeatherActivity extends BaseActivity {
     }
 
     private void queryWeatherForHttp() {
-        RetrofitUtil.getWeatherJson(weatherId, API_KEY, new Callback<ResponseBody>() {
+        RetrofitUtil.getWeatherJson(weatherId, API_KEY).subscribe(new Action1<ResponseBody>() {
             @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+            public void call(ResponseBody responseBody) {
                 try {
-                    String weather = response.body().string();
+                    String weather = responseBody.string();
                     if (TextUtils.isEmpty(weather)) {
                         return;
                     }
@@ -183,9 +176,9 @@ public class WeatherActivity extends BaseActivity {
                             .getDefaultSharedPreferences(WeatherActivity.this).edit();
                     editor.putString("weatherId", weatherId);
                     editor.putString(weatherId, weather);
-                    editor.apply();
                     HeWeather heWeather = mGson.fromJson(weather, HeWeather.class);
                     showWeather(heWeather);
+                    editor.apply();
                 } catch (Exception e) {
                     if (e instanceof JsonSyntaxException) {
                         ToastUtils.shortToast(WeatherActivity.this, "请求次数不足！");
@@ -194,9 +187,9 @@ public class WeatherActivity extends BaseActivity {
                     e.printStackTrace();
                 }
             }
-
+        }, new Action1<Throwable>() {
             @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
+            public void call(Throwable throwable) {
                 ToastUtils.shortToast(WeatherActivity.this, "请求网络失败！");
             }
         });
@@ -250,6 +243,10 @@ public class WeatherActivity extends BaseActivity {
     }
 
     public void inject(){
-        DaggerWeatherComponent.create().inject(this);
+        DaggerWeatherComponent
+                .builder()
+                .applicationComponent(MyApplication.getApplicationComponent())
+                .build()
+                .inject(this);
     }
 }

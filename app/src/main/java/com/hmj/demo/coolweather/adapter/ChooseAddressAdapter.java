@@ -16,12 +16,12 @@ import com.hmj.demo.coolweather.WeatherActivity;
 import com.hmj.demo.coolweather.db.City;
 import com.hmj.demo.coolweather.db.County;
 import com.hmj.demo.coolweather.db.Province;
-import com.hmj.demo.coolweather.event.TitleEvent;
+import com.hmj.demo.coolweather.rxbus.RxBus;
+import com.hmj.demo.coolweather.rxbus.event.TitleEvent;
 import com.hmj.demo.coolweather.utils.ActivityUtils;
 import com.hmj.demo.coolweather.utils.DbUtil;
 import com.hmj.demo.coolweather.utils.RetrofitUtil;
 
-import org.greenrobot.eventbus.EventBus;
 import org.litepal.crud.DataSupport;
 
 import java.io.IOException;
@@ -29,9 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import okhttp3.ResponseBody;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import rx.functions.Action1;
 
 public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdapter.MyViewHolder> {
 
@@ -55,9 +53,12 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
     private String currentProvinceName;
     private int adapterPosition;
 
+    private RxBus rxBus;
 
-    public ChooseAddressAdapter(Context context) {
+
+    public ChooseAddressAdapter(Context context, RxBus rxBus) {
         this.context = context;
+        this.rxBus = rxBus;
         queryProvince();
     }
 
@@ -105,12 +106,12 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
                 } else if (addressLevel == CITY_LEVEL) {
                     queryCounty(adapterPosition);
                 } else if (addressLevel == COUNTY_LEVEL) {
-                    if(context instanceof MainActivity){
+                    if (context instanceof MainActivity) {
                         Bundle bundle = new Bundle();
-                        bundle.putString(WeatherActivity.WEATHER_ID,countyList.get(adapterPosition).getWeatherId());
-                        ActivityUtils.startParamsActivity(context, WeatherActivity.class,bundle);
-                        ((Activity)context).finish();
-                    }else if(context instanceof WeatherActivity){
+                        bundle.putString(WeatherActivity.WEATHER_ID, countyList.get(adapterPosition).getWeatherId());
+                        ActivityUtils.startParamsActivity(context, WeatherActivity.class, bundle);
+                        ((Activity) context).finish();
+                    } else if (context instanceof WeatherActivity) {
                         WeatherActivity weatherActivity = (WeatherActivity) context;
                         weatherActivity.drawerLayout.closeDrawers();
                         weatherActivity.weatherId = countyList.get(adapterPosition).getWeatherId();
@@ -126,7 +127,7 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
     }
 
     private void queryProvince() {
-        EventBus.getDefault().post(new TitleEvent(PROVINCE_LEVEL, "中国"));
+        rxBus.postSticky(new TitleEvent(PROVINCE_LEVEL, "中国"));
         provinceList = DataSupport.findAll(Province.class);
         if (provinceList.size() > 0) {
             setProvinceList(PROVINCE_LEVEL, provinceList);
@@ -138,7 +139,7 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
     private void queryCounty(int adapterPosition) {
         currentCityCode = cityList.get(adapterPosition).getCityCode();
         currentCityName = cityList.get(adapterPosition).getCityName();
-        EventBus.getDefault().post(new TitleEvent(COUNTY_LEVEL,
+        rxBus.postSticky(new TitleEvent(COUNTY_LEVEL,
                 currentCityName));
         countyList = DataSupport.where("cityCode = ?",
                 String.valueOf(currentCityCode)).find(County.class);
@@ -153,7 +154,7 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
     private void queryCity(int adapterPosition) {
         currentProvinceCode = provinceList.get(adapterPosition).getProvinceCode();
         currentProvinceName = provinceList.get(adapterPosition).getProvinceName();
-        EventBus.getDefault().post(new TitleEvent(CITY_LEVEL,
+        rxBus.postSticky(new TitleEvent(CITY_LEVEL,
                 currentProvinceName));
         cityList = DataSupport.where("provinceCode = ?",
                 String.valueOf(currentProvinceCode)).find(City.class);
@@ -168,31 +169,28 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
     private void queryServer(int level) {
         switch (level) {
             case PROVINCE_LEVEL:
-                RetrofitUtil.getProvinceJson(new Callback<ResponseBody>() {
-                    @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                        try {
-                            boolean result = DbUtil.saveProvinceDb(response.body().string());
-                            if (result) {
-                                queryProvince();
+                RetrofitUtil.getProvinceJson()
+                        .subscribe(new Action1<ResponseBody>() {
+                            @Override
+                            public void call(ResponseBody responseBody) {
+                                try {
+                                    boolean result = DbUtil.saveProvinceDb(responseBody.string());
+                                    if (result) {
+                                        queryProvince();
+                                    }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                        });
 
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-
-                    }
-                });
                 break;
             case CITY_LEVEL:
-                RetrofitUtil.getCityJson(currentProvinceCode, new Callback<ResponseBody>() {
+                RetrofitUtil.getCityJson(currentProvinceCode, new Action1<ResponseBody>() {
                     @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    public void call(ResponseBody responseBody) {
                         try {
-                            boolean result = DbUtil.saveCityDb(response.body().string(), currentProvinceCode);
+                            boolean result = DbUtil.saveCityDb(responseBody.string(), currentProvinceCode);
                             if (result) {
                                 queryCity(adapterPosition);
                             }
@@ -200,32 +198,23 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
                             e.printStackTrace();
                         }
                     }
-
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-
-                    }
                 });
                 break;
             case COUNTY_LEVEL:
-                RetrofitUtil.getCountyJson(currentProvinceCode, currentCityCode, new Callback<ResponseBody>() {
-                    @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                        try {
-                            boolean result = DbUtil.saveCountyDb(response.body().string(), currentCityCode);
-                            if (result) {
-                                queryCounty(adapterPosition);
+                RetrofitUtil.getCountyJson(currentProvinceCode, currentCityCode,
+                        new Action1<ResponseBody>() {
+                            @Override
+                            public void call(ResponseBody responseBody) {
+                                try {
+                                    boolean result = DbUtil.saveCountyDb(responseBody.string(), currentCityCode);
+                                    if (result) {
+                                        queryCounty(adapterPosition);
+                                    }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
-
-                    }
-                });
+                        });
                 break;
         }
 
@@ -238,12 +227,12 @@ public class ChooseAddressAdapter extends RecyclerView.Adapter<ChooseAddressAdap
                 break;
             case CITY_LEVEL:
                 cityList.clear();
-                EventBus.getDefault().post(new TitleEvent(PROVINCE_LEVEL, "中国"));
+                rxBus.postSticky(new TitleEvent(PROVINCE_LEVEL, "中国"));
                 setProvinceList(PROVINCE_LEVEL, provinceList);
                 break;
             case COUNTY_LEVEL:
                 countyList.clear();
-                EventBus.getDefault().post(new TitleEvent(CITY_LEVEL,
+                rxBus.postSticky(new TitleEvent(CITY_LEVEL,
                         currentProvinceName));
                 setCityList(CITY_LEVEL, cityList);
                 break;

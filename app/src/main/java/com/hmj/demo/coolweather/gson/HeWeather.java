@@ -1,8 +1,9 @@
 package com.hmj.demo.coolweather.gson;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class HeWeather {
+public class HeWeather implements Serializable{
 
     private List<HeWeatherBean> HeWeather;
 

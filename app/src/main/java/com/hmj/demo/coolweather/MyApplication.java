@@ -1,13 +1,17 @@
 package com.hmj.demo.coolweather;
 
-import android.app.Application;
-
+import com.google.gson.Gson;
 import com.hmj.demo.coolweather.injector.components.ApplicationComponent;
 import com.hmj.demo.coolweather.injector.components.DaggerApplicationComponent;
 import com.hmj.demo.coolweather.injector.modules.ApplicationModule;
+import com.hmj.demo.coolweather.rxbus.RxBus;
 
-public class MyApplication extends Application {
+import org.litepal.LitePalApplication;
+
+public class MyApplication extends LitePalApplication {
     private static ApplicationComponent applicationComonent;
+
+    private RxBus mRxBus = new RxBus();
 
     @Override
     public void onCreate() {
@@ -17,7 +21,7 @@ public class MyApplication extends Application {
 
     private void inject() {
         applicationComonent  = DaggerApplicationComponent.builder()
-                .applicationModule(new ApplicationModule(this))
+                .applicationModule(new ApplicationModule(this,new Gson(),mRxBus))
                 .build();
     }
 
@@ -25,7 +29,7 @@ public class MyApplication extends Application {
         return this;
     }
 
-    public static ApplicationComponent getApplicationComonent() {
+    public static ApplicationComponent getApplicationComponent() {
         return applicationComonent;
     }
 }

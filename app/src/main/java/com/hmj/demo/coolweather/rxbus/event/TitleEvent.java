@@ -1,4 +1,4 @@
-package com.hmj.demo.coolweather.event;
+package com.hmj.demo.coolweather.rxbus.event;
 
 public class TitleEvent {
     private int level;

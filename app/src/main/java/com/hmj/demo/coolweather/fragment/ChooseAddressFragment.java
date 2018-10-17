@@ -12,17 +12,15 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.gson.Gson;
 import com.hmj.demo.coolweather.MyApplication;
 import com.hmj.demo.coolweather.R;
 import com.hmj.demo.coolweather.adapter.ChooseAddressAdapter;
-import com.hmj.demo.coolweather.event.TitleEvent;
 import com.hmj.demo.coolweather.injector.components.ApplicationComponent;
 import com.hmj.demo.coolweather.injector.components.DaggerChooseAddressComponents;
 import com.hmj.demo.coolweather.injector.modules.AddressAdapterModule;
-
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
+import com.hmj.demo.coolweather.rxbus.RxBus;
+import com.hmj.demo.coolweather.rxbus.event.TitleEvent;
 
 import javax.inject.Inject;
 
@@ -30,6 +28,9 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Unbinder;
+import rx.Observable;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
 
 public class ChooseAddressFragment extends BaseFragment {
 
@@ -46,13 +47,31 @@ public class ChooseAddressFragment extends BaseFragment {
 
     @Inject
     public ChooseAddressAdapter adapter;
+    @Inject
+    public Gson gson;
+    @Inject
+    public RxBus rxBus;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         View view = inflater.inflate(R.layout.choose_address_frg, null);
-        EventBus.getDefault().register(this);
+        Observable<TitleEvent> observable =
+                rxBus.toObservableSticky(TitleEvent.class)
+                .observeOn(AndroidSchedulers.mainThread());
+
+        observable.subscribe(new Action1<TitleEvent>() {
+            @Override
+            public void call(TitleEvent event) {
+                title.setText(event.getTitle());
+                if (event.getLevel() == PROVINCE_LEVEL) {
+                    back.setVisibility(View.INVISIBLE);
+                } else {
+                    back.setVisibility(View.VISIBLE);
+                }
+            }
+        });
         unbinder = ButterKnife.bind(this, view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         recyclerView.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL));
@@ -74,7 +93,7 @@ public class ChooseAddressFragment extends BaseFragment {
     public void onDestroyView() {
         super.onDestroyView();
         unbinder.unbind();
-        EventBus.getDefault().unregister(this);
+        rxBus.removeAllStickyEvents();
     }
 
     @OnClick(R.id.back)
@@ -82,17 +101,7 @@ public class ChooseAddressFragment extends BaseFragment {
         adapter.back();
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void setTitle(TitleEvent event) {
-        title.setText(event.getTitle());
-        if (event.getLevel() == PROVINCE_LEVEL) {
-            back.setVisibility(View.INVISIBLE);
-        } else {
-            back.setVisibility(View.VISIBLE);
-        }
-    }
-
     public ApplicationComponent getApplication() {
-        return MyApplication.getApplicationComonent();
+        return MyApplication.getApplicationComponent();
     }
 }

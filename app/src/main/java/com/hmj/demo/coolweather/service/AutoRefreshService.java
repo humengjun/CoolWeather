@@ -15,9 +15,7 @@ import com.hmj.demo.coolweather.utils.RetrofitUtil;
 import java.io.IOException;
 
 import okhttp3.ResponseBody;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import rx.functions.Action1;
 
 public class AutoRefreshService extends Service {
 
@@ -56,42 +54,32 @@ public class AutoRefreshService extends Service {
     private void updateWeather() {
         final String weatherId = sharedPreferences.getString("weatherId", null);
         if (!TextUtils.isEmpty(weatherId)) {
-            RetrofitUtil.getWeatherJson(weatherId, API_KEY, new Callback<ResponseBody>() {
+            RetrofitUtil.getWeatherJson(weatherId, API_KEY).subscribe(new Action1<ResponseBody>() {
                 @Override
-                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                public void call(ResponseBody responseBody) {
                     try {
-                        String weather = response.body().string();
+                        String weather = responseBody.string();
                         sharedPreferences.edit().putString(weatherId, weather);
                         sharedPreferences.edit().apply();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
-
-                @Override
-                public void onFailure(Call<ResponseBody> call, Throwable t) {
-
-                }
             });
         }
     }
 
     private void updateBackground() {
-        RetrofitUtil.getBackgroundUrl(new Callback<ResponseBody>() {
+        RetrofitUtil.getBackgroundUrl().subscribe(new Action1<ResponseBody>() {
             @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+            public void call(ResponseBody responseBody) {
                 try {
-                    String background = response.body().string();
+                    String background = responseBody.string();
                     sharedPreferences.edit().putString("background", background);
                     sharedPreferences.edit().apply();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }
-
-            @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-
             }
         });
     }

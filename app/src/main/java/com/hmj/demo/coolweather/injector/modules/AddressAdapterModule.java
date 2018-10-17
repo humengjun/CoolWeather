@@ -1,8 +1,11 @@
 package com.hmj.demo.coolweather.injector.modules;
 
+import com.google.gson.Gson;
 import com.hmj.demo.coolweather.adapter.ChooseAddressAdapter;
 import com.hmj.demo.coolweather.fragment.ChooseAddressFragment;
 import com.hmj.demo.coolweather.injector.PerFragment;
+import com.hmj.demo.coolweather.rxbus.RxBus;
+import com.hmj.demo.coolweather.utils.TestGson;
 
 import dagger.Module;
 import dagger.Provides;
@@ -17,7 +20,12 @@ public class AddressAdapterModule {
 
     @PerFragment
     @Provides
-    public ChooseAddressAdapter provideAdapter(){
-        return new ChooseAddressAdapter(fragment.getActivity());
+    public ChooseAddressAdapter provideAdapter(RxBus rxBus){
+        return new ChooseAddressAdapter(fragment.getActivity(),rxBus);
+    }
+    @PerFragment
+    @Provides
+    public TestGson provideGson(Gson gson){
+        return new TestGson(gson);
     }
 }
